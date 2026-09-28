@@ -14,7 +14,7 @@
     user-select: none; -webkit-user-select: none;
     touch-action: none; overscroll-behavior: none;
   }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 
   /* ---------- HUD ---------- */
   #hud {
@@ -743,7 +743,39 @@
     canvas.addEventListener('touchend',    endTouch, { passive: false });
     canvas.addEventListener('touchcancel', endTouch, { passive: false });
 
-   
+       // ================= MOUSE LOOK (PC) =================
+    let mouseDown = false;
+    let mouseLastX = 0, mouseLastY = 0;
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      mouseDown = true;
+      mouseLastX = e.clientX;
+      mouseLastY = e.clientY;
+      canvas.style.cursor = 'grabbing';
+      markInteracted();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!mouseDown) return;
+      const dx = e.clientX - mouseLastX;
+      const dy = e.clientY - mouseLastY;
+      mouseLastX = e.clientX;
+      mouseLastY = e.clientY;
+
+      camera.rotation.y -= dx * LOOK_SENS;
+      pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, pitch - dy * LOOK_SENS));
+      camera.rotation.x = pitch;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (mouseDown) {
+        mouseDown = false;
+        canvas.style.cursor = '';
+      }
+    });
+
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
    
     // ================= FULLSCREEN =================
     const btnFull = document.getElementById('btnFull');
