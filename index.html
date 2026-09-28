@@ -748,41 +748,72 @@
     }
 
     // ================= PUERTA =================
+    const DOOR_W = 2.4;               // Ancho de la puerta
+    const DOOR_H = 4.8;               // Alto de la puerta
+    const DOOR_PANEL_Z = -L + 0.02;   // Plano donde viven los paneles
+    const DOOR_Z       = -L + 0.04;   // La puerta un poquito al frente
+
+    // Paneles que rellenan la pared alrededor del marco (izq, der, arriba)
+    const panelMat = matWall;
+    const leftPanelW = (W - DOOR_W) / 2;
+
+    const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(leftPanelW, H), panelMat);
+    leftPanel.position.set(-W / 2 + leftPanelW / 2, H / 2, DOOR_PANEL_Z);
+    scene.add(leftPanel);
+
+    const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(leftPanelW, H), panelMat);
+    rightPanel.position.set(W / 2 - leftPanelW / 2, H / 2, DOOR_PANEL_Z);
+    scene.add(rightPanel);
+
+    const topPanelH = H - DOOR_H;
+    const topPanel = new THREE.Mesh(new THREE.PlaneGeometry(DOOR_W, topPanelH), panelMat);
+    topPanel.position.set(0, DOOR_H + topPanelH / 2, DOOR_PANEL_Z);
+    scene.add(topPanel);
+
+    // Puerta: pivote en el borde IZQUIERDO del marco, gira hacia la sala 1
     const doorGroup = new THREE.Group();
-    doorGroup.position.set(-W / 2 + 0.02, 0, -L + 0.02);
+    doorGroup.position.set(-DOOR_W / 2, 0, DOOR_Z);
     scene.add(doorGroup);
 
-    const doorMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(W - 0.06, H - 0.12),
-      new THREE.MeshStandardMaterial({
-        color: 0x8B1A1A,
-        side: THREE.DoubleSide,
-        roughness: 0.55,
-        metalness: 0.15,
-      })
-    );
-    doorMesh.position.set((W - 0.06) / 2, H / 2, 0);
+    const doorMat = new THREE.MeshStandardMaterial({
+      color: 0x8B1A1A,
+      side: THREE.DoubleSide,
+      roughness: 0.55,
+      metalness: 0.15,
+    });
+    const doorMesh = new THREE.Mesh(new THREE.PlaneGeometry(DOOR_W, DOOR_H), doorMat);
+    doorMesh.position.set(DOOR_W / 2, DOOR_H / 2, 0);
     doorGroup.add(doorMesh);
 
-    // Pomo dorado
+    // Pomo dorado (borde derecho de la puerta)
     const knobMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.15, metalness: 0.9 });
-    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), knobMat);
-    knob.position.set(W - 0.55, H * 0.5, 0.12);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), knobMat);
+    knob.position.set(DOOR_W - 0.28, DOOR_H / 2, 0.1);
     doorGroup.add(knob);
 
-    // Marco de la puerta
+    // Marco decorativo alrededor del marco de la puerta
     const doorFrameMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.4, metalness: 0.4 });
+    const frameThick = 0.15;
 
-    const topFrame = new THREE.Mesh(new THREE.BoxGeometry(W, 0.2, 0.15), doorFrameMat);
-    topFrame.position.set(0, H - 0.1, -L + 0.02);
+    const topFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(DOOR_W + frameThick * 2, frameThick, 0.18),
+      doorFrameMat
+    );
+    topFrame.position.set(0, DOOR_H + frameThick / 2, DOOR_Z);
     scene.add(topFrame);
 
-    const sideFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
-    sideFrameL.position.set(-W / 2 + 0.1, H / 2, -L + 0.02);
+    const sideFrameL = new THREE.Mesh(
+      new THREE.BoxGeometry(frameThick, DOOR_H + frameThick, 0.18),
+      doorFrameMat
+    );
+    sideFrameL.position.set(-DOOR_W / 2 - frameThick / 2, (DOOR_H + frameThick) / 2, DOOR_Z);
     scene.add(sideFrameL);
 
-    const sideFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
-    sideFrameR.position.set(W / 2 - 0.1, H / 2, -L + 0.02);
+    const sideFrameR = new THREE.Mesh(
+      new THREE.BoxGeometry(frameThick, DOOR_H + frameThick, 0.18),
+      doorFrameMat
+    );
+    sideFrameR.position.set(DOOR_W / 2 + frameThick / 2, (DOOR_H + frameThick) / 2, DOOR_Z);
     scene.add(sideFrameR);
 
     // ================= LÓGICA DE LA PUERTA =================
