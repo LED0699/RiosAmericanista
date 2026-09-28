@@ -829,7 +829,17 @@
       if (navigator.vibrate) navigator.vibrate(30);
     }
 
-    document.getElementById('btnOpenDoor').addEventListener('click', (e) => {
+     const btnDoor = document.getElementById('btnOpenDoor');
+
+    // Móvil: reacciona al primer toque (sin esperar el "click")
+    btnDoor.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openDoor();
+    }, { passive: false });
+
+    // PC: click normal con mouse
+    btnDoor.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       openDoor();
