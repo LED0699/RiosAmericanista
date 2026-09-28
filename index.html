@@ -188,14 +188,6 @@
 
   <div id="hint">Arrastra la pantalla o usa los botones</div>
 
-  <div id="controls">
-    <div class="pad"><div class="btn" data-act="left">◀</div></div>
-    <div class="pad">
-      <div class="btn" data-act="back">▼</div>
-      <div class="btn" data-act="forward">▲</div>
-      <div class="btn" data-act="right">▶</div>
-    </div>
-  </div>
 
   <!-- Pantalla de inicio / carga -->
   <div id="startScreen" class="overlay">
@@ -640,24 +632,7 @@
       setTimeout(() => document.getElementById('hint').classList.add('fade'), 400);
     }
 
-    document.querySelectorAll('.btn').forEach(el => {
-      const key = el.dataset.act;
-      const on  = e => {
-        e.preventDefault();
-        keys[key] = true;
-        el.classList.add('pressed');
-        markInteracted();
-        if (navigator.vibrate) navigator.vibrate(12);
-      };
-      const off = e => { e.preventDefault(); keys[key] = false; el.classList.remove('pressed'); };
 
-      el.addEventListener('touchstart', on,  { passive: false });
-      el.addEventListener('touchend',   off, { passive: false });
-      el.addEventListener('touchcancel',off, { passive: false });
-      el.addEventListener('mousedown',  on);
-      el.addEventListener('mouseup',    off);
-      el.addEventListener('mouseleave', off);
-    });
 
     const keyMap = {
       ArrowUp: 'forward', w: 'forward', W: 'forward',
@@ -674,80 +649,101 @@
 
 
 
-       // ================= JOYSTICK TÁCTIL =================
+    // ================= CONTROLES TÁCTILES DUALES =================
     const joystick = document.getElementById('joystick');
     const joystickKnob = document.getElementById('joystick-knob');
 
-    const JOY_RANGE = 55;   // Radio máximo (px)
-    const JOY_DEAD  = 8;    // Zona muerta (px)
+    const JOY_RANGE = 55;              // Radio del joystick (px)
+    const JOY_DEAD  = 8;               // Zona muerta (px)
+    const LOOK_SENS = 0.005;           // Sensibilidad de cámara (rad/px)
+    const PITCH_MAX = Math.PI / 2 - 0.15; // Límite de inclinación
 
     let joyTouchId = null;
     let joyStartX = 0, joyStartY = 0;
-    let touchTurn = 0;      // -1 a 1
-    let touchMove = 0;      // -1 a 1
+    let touchMoveX = 0;   // Strafe (-1 izq, +1 der)
+    let touchMoveY = 0;   // Forward (-1 atrás, +1 adelante)
+
+    let lookTouchId = null;
+    let lookLastX = 0, lookLastY = 0;
+    let pitch = 0;        // Ángulo vertical de la cámara
 
     canvas.addEventListener('touchstart', (e) => {
-      if (joyTouchId !== null) return;
-      const t = e.changedTouches[0];
-      joyTouchId = t.identifier;
-      joyStartX = t.clientX;
-      joyStartY = t.clientY;
+      for (const t of e.changedTouches) {
+        const isLeft = t.clientX < window.innerWidth / 2;
 
-      joystick.style.left = t.clientX + 'px';
-      joystick.style.top  = t.clientY + 'px';
-      joystick.hidden = false;
-      joystickKnob.style.transform = 'translate(-50%, -50%)';
-
-      markInteracted();
-      if (navigator.vibrate) navigator.vibrate(8);
+        if (isLeft && joyTouchId === null) {
+          // -------- MITAD IZQUIERDA: joystick de movimiento --------
+          joyTouchId = t.identifier;
+          joyStartX = t.clientX;
+          joyStartY = t.clientY;
+          joystick.style.left = t.clientX + 'px';
+          joystick.style.top  = t.clientY + 'px';
+          joystick.hidden = false;
+          joystickKnob.style.transform = 'translate(-50%, -50%)';
+          markInteracted();
+          if (navigator.vibrate) navigator.vibrate(8);
+        } else if (!isLeft && lookTouchId === null) {
+          // -------- MITAD DERECHA: cámara --------
+          lookTouchId = t.identifier;
+          lookLastX = t.clientX;
+          lookLastY = t.clientY;
+          markInteracted();
+        }
+      }
       e.preventDefault();
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
-      if (joyTouchId === null) return;
       for (const t of e.changedTouches) {
-        if (t.identifier !== joyTouchId) continue;
+        if (t.identifier === joyTouchId) {
+          let dx = t.clientX - joyStartX;
+          let dy = t.clientY - joyStartY;
+          const dist = Math.hypot(dx, dy);
+          let kx = dx, ky = dy;
+          if (dist > JOY_RANGE) {
+            kx = dx / dist * JOY_RANGE;
+            ky = dy / dist * JOY_RANGE;
+          }
+          joystickKnob.style.transform =
+            `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
 
-        let dx = t.clientX - joyStartX;
-        let dy = t.clientY - joyStartY;
+          touchMoveX =  Math.max(-1, Math.min(1, dx / JOY_RANGE));
+          touchMoveY = -Math.max(-1, Math.min(1, dy / JOY_RANGE));
+          if (Math.abs(dx) < JOY_DEAD) touchMoveX = 0;
+          if (Math.abs(dy) < JOY_DEAD) touchMoveY = 0;
 
-        // Limita el knob visual dentro del círculo
-        const dist = Math.hypot(dx, dy);
-        let kx = dx, ky = dy;
-        if (dist > JOY_RANGE) {
-          kx = dx / dist * JOY_RANGE;
-          ky = dy / dist * JOY_RANGE;
+        } else if (t.identifier === lookTouchId) {
+          const dx = t.clientX - lookLastX;
+          const dy = t.clientY - lookLastY;
+          lookLastX = t.clientX;
+          lookLastY = t.clientY;
+
+          camera.rotation.y -= dx * LOOK_SENS;
+          pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, pitch - dy * LOOK_SENS));
+          camera.rotation.x = pitch;
         }
-        joystickKnob.style.transform =
-          `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
-
-        // Convertir a input -1..1
-        touchTurn = -Math.max(-1, Math.min(1, dx / JOY_RANGE));
-        touchMove = -Math.max(-1, Math.min(1, dy / JOY_RANGE));
-
-        if (Math.abs(dx) < JOY_DEAD) touchTurn = 0;
-        if (Math.abs(dy) < JOY_DEAD) touchMove = 0;
-
-        e.preventDefault();
-        break;
       }
+      e.preventDefault();
     }, { passive: false });
 
-    function endJoystick(e) {
+    function endTouch(e) {
       for (const t of e.changedTouches) {
         if (t.identifier === joyTouchId) {
           joyTouchId = null;
-          touchTurn = 0;
-          touchMove = 0;
+          touchMoveX = 0;
+          touchMoveY = 0;
           joystick.hidden = true;
-          e.preventDefault();
-          break;
+        }
+        if (t.identifier === lookTouchId) {
+          lookTouchId = null;
         }
       }
+      e.preventDefault();
     }
-    canvas.addEventListener('touchend',    endJoystick, { passive: false });
-    canvas.addEventListener('touchcancel', endJoystick, { passive: false });
+    canvas.addEventListener('touchend',    endTouch, { passive: false });
+    canvas.addEventListener('touchcancel', endTouch, { passive: false });
 
+   
    
     // ================= FULLSCREEN =================
     const btnFull = document.getElementById('btnFull');
@@ -830,22 +826,27 @@
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
 
-      const cw = container.clientWidth, ch = container.clientHeight;
-      if (cw !== lastW || ch !== lastH) resize();
+         // Teclado (por si juegas en PC)
+      const kFwd    = (keys.forward ? 1 : 0) - (keys.back  ? 1 : 0);
+      const kStrafe = (keys.right   ? 1 : 0) - (keys.left  ? 1 : 0);
+      const kTurn   = (keys.left    ? 1 : 0) - (keys.right ? 1 : 0);
 
-      let fwd  = (keys.forward ? 1 : 0) - (keys.back ? 1 : 0) + touchMove;
-      let turn = (keys.left    ? 1 : 0) - (keys.right ? 1 : 0) + touchTurn;
-      fwd  = Math.max(-1, Math.min(1, fwd));
-      turn = Math.max(-1, Math.min(1, turn));
+      // Suma teclado + joystick
+      let fwd    = Math.max(-1, Math.min(1, kFwd    + touchMoveY));
+      let strafe = Math.max(-1, Math.min(1, kStrafe + touchMoveX));
 
-      camera.rotation.y += turn * TURN_SPEED * dt;
+      // Giro solo con teclado (el táctil ya lo hace por el lado derecho)
+      camera.rotation.y += kTurn * TURN_SPEED * dt;
 
       let moving = false;
-      if (fwd !== 0) {
-        const dirX = -Math.sin(camera.rotation.y);
-        const dirZ = -Math.cos(camera.rotation.y);
-        camera.position.x += dirX * fwd * MOVE_SPEED * dt;
-        camera.position.z += dirZ * fwd * MOVE_SPEED * dt;
+      if (fwd !== 0 || strafe !== 0) {
+        const dirX   = -Math.sin(camera.rotation.y);
+        const dirZ   = -Math.cos(camera.rotation.y);
+        const rightX =  Math.cos(camera.rotation.y);
+        const rightZ = -Math.sin(camera.rotation.y);
+
+        camera.position.x += (dirX * fwd + rightX * strafe) * MOVE_SPEED * dt;
+        camera.position.z += (dirZ * fwd + rightZ * strafe) * MOVE_SPEED * dt;
         moving = true;
       }
 
