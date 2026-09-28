@@ -131,6 +131,33 @@
     100% { transform: translateY(110vh) rotate(720deg); }
   }
 
+
+   /* ---------- Joystick virtual ---------- */
+  #joystick {
+    position: fixed;
+    width: 130px; height: 130px;
+    border: 3px solid rgba(255,223,0,0.7);
+    border-radius: 50%;
+    background: rgba(0,28,68,0.35);
+    box-shadow: 0 0 20px rgba(255,223,0,0.35), inset 0 0 20px rgba(255,223,0,0.15);
+    pointer-events: none;
+    z-index: 15;
+    transform: translate(-50%, -50%);
+  }
+  #joystick[hidden] { display: none; }
+  #joystick-knob {
+    position: absolute; left: 50%; top: 50%;
+    width: 56px; height: 56px;
+    background: rgba(255,223,0,0.9);
+    border: 3px solid #FFDF00;
+    border-radius: 50%;
+    box-shadow: 0 0 16px rgba(255,223,0,0.9);
+    transform: translate(-50%, -50%);
+    will-change: transform;
+  }
+
+
+ 
   /* ---------- Landscape compacto ---------- */
   @media (orientation: landscape) and (max-height: 500px) {
     #hud h1 { font-size: 14px; }
@@ -143,6 +170,9 @@
 <body>
 
   <canvas id="game"></canvas>
+   <div id="joystick" hidden>
+    <div id="joystick-knob"></div>
+  </div>
 
   <div id="hud">
     <h1>¡Feliz Cumpleaños!</h1>
@@ -156,7 +186,7 @@
     </svg>
   </button>
 
-  <div id="hint">Usa ◀ ▶ para girar y ▲ ▼ para caminar</div>
+  <div id="hint">Arrastra la pantalla o usa los botones</div>
 
   <div id="controls">
     <div class="pad"><div class="btn" data-act="left">◀</div></div>
@@ -642,6 +672,83 @@
       if (keyMap[e.key]) keys[keyMap[e.key]] = false;
     });
 
+
+
+       // ================= JOYSTICK TÁCTIL =================
+    const joystick = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('joystick-knob');
+
+    const JOY_RANGE = 55;   // Radio máximo (px)
+    const JOY_DEAD  = 8;    // Zona muerta (px)
+
+    let joyTouchId = null;
+    let joyStartX = 0, joyStartY = 0;
+    let touchTurn = 0;      // -1 a 1
+    let touchMove = 0;      // -1 a 1
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (joyTouchId !== null) return;
+      const t = e.changedTouches[0];
+      joyTouchId = t.identifier;
+      joyStartX = t.clientX;
+      joyStartY = t.clientY;
+
+      joystick.style.left = t.clientX + 'px';
+      joystick.style.top  = t.clientY + 'px';
+      joystick.hidden = false;
+      joystickKnob.style.transform = 'translate(-50%, -50%)';
+
+      markInteracted();
+      if (navigator.vibrate) navigator.vibrate(8);
+      e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (joyTouchId === null) return;
+      for (const t of e.changedTouches) {
+        if (t.identifier !== joyTouchId) continue;
+
+        let dx = t.clientX - joyStartX;
+        let dy = t.clientY - joyStartY;
+
+        // Limita el knob visual dentro del círculo
+        const dist = Math.hypot(dx, dy);
+        let kx = dx, ky = dy;
+        if (dist > JOY_RANGE) {
+          kx = dx / dist * JOY_RANGE;
+          ky = dy / dist * JOY_RANGE;
+        }
+        joystickKnob.style.transform =
+          `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+
+        // Convertir a input -1..1
+        touchTurn = -Math.max(-1, Math.min(1, dx / JOY_RANGE));
+        touchMove = -Math.max(-1, Math.min(1, dy / JOY_RANGE));
+
+        if (Math.abs(dx) < JOY_DEAD) touchTurn = 0;
+        if (Math.abs(dy) < JOY_DEAD) touchMove = 0;
+
+        e.preventDefault();
+        break;
+      }
+    }, { passive: false });
+
+    function endJoystick(e) {
+      for (const t of e.changedTouches) {
+        if (t.identifier === joyTouchId) {
+          joyTouchId = null;
+          touchTurn = 0;
+          touchMove = 0;
+          joystick.hidden = true;
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+    canvas.addEventListener('touchend',    endJoystick, { passive: false });
+    canvas.addEventListener('touchcancel', endJoystick, { passive: false });
+
+   
     // ================= FULLSCREEN =================
     const btnFull = document.getElementById('btnFull');
     function isFs() {
@@ -726,8 +833,10 @@
       const cw = container.clientWidth, ch = container.clientHeight;
       if (cw !== lastW || ch !== lastH) resize();
 
-      const fwd  = (keys.forward ? 1 : 0) - (keys.back ? 1 : 0);
-      const turn = (keys.left    ? 1 : 0) - (keys.right ? 1 : 0);
+      let fwd  = (keys.forward ? 1 : 0) - (keys.back ? 1 : 0) + touchMove;
+      let turn = (keys.left    ? 1 : 0) - (keys.right ? 1 : 0) + touchTurn;
+      fwd  = Math.max(-1, Math.min(1, fwd));
+      turn = Math.max(-1, Math.min(1, turn));
 
       camera.rotation.y += turn * TURN_SPEED * dt;
 
