@@ -16,7 +16,6 @@
   }
   #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 
-  /* ---------- HUD ---------- */
   #hud {
     position: fixed; top: 0; left: 0; right: 0;
     padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
@@ -42,7 +41,6 @@
   #btnMute { right: 64px; font-size: 22px; line-height: 1; }
   #btnMute[hidden] { display: none; }
 
-  /* ---------- Hint ---------- */
   #hint {
     position: fixed; left: 50%; transform: translateX(-50%);
     top: calc(env(safe-area-inset-top, 0px) + 55px);
@@ -55,170 +53,6 @@
   }
   #hint.fade { opacity: 0; }
 
-
-
-    // ================= SEGUNDA SALA (DETRÁS DE LA PUERTA) =================
-    const floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, L2), matFloor);
-    floor2.rotation.x = -Math.PI / 2;
-    floor2.position.set(0, 0, -L - L2 / 2);
-    scene.add(floor2);
-
-    const ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(W, L2), matCeiling);
-    ceiling2.rotation.x = Math.PI / 2;
-    ceiling2.position.set(0, H, -L - L2 / 2);
-    scene.add(ceiling2);
-
-    const wallL2 = new THREE.Mesh(new THREE.PlaneGeometry(L2, H), matWall);
-    wallL2.rotation.y = Math.PI / 2;
-    wallL2.position.set(-W / 2, H / 2, -L - L2 / 2);
-    scene.add(wallL2);
-
-    const wallR2 = new THREE.Mesh(new THREE.PlaneGeometry(L2, H), matWall);
-    wallR2.rotation.y = -Math.PI / 2;
-    wallR2.position.set(W / 2, H / 2, -L - L2 / 2);
-    scene.add(wallR2);
-
-    // Alfombra continuación (misma textura)
-    const carpetTex2 = makeShieldTexture(512, '#001C44');
-    carpetTex2.wrapS = carpetTex2.wrapT = THREE.RepeatWrapping;
-    carpetTex2.repeat.set(1, 5);
-    carpetTex2.anisotropy = maxAniso;
-    const carpet2 = new THREE.Mesh(
-      new THREE.PlaneGeometry(W * 0.55, L2),
-      new THREE.MeshStandardMaterial({ map: carpetTex2, roughness: 0.9 })
-    );
-    carpet2.rotation.x = -Math.PI / 2;
-    carpet2.position.set(0, 0.015, -L - L2 / 2);
-    scene.add(carpet2);
-
-    // Zócalos de la segunda sala
-    [-W / 2 + 0.005, W / 2 - 0.005].forEach((x, i) => {
-      const trim = new THREE.Mesh(
-        new THREE.PlaneGeometry(L2, 0.35),
-        new THREE.MeshStandardMaterial({ color: COLORS.frame })
-      );
-      trim.rotation.y = (i === 0 ? 1 : -1) * Math.PI / 2;
-      trim.position.set(x, 0.175, -L - L2 / 2);
-      scene.add(trim);
-    });
-
-    // ================= PUERTA AL FINAL DEL 1er PASILLO =================
-    const doorGroup = new THREE.Group();
-    doorGroup.position.set(-W / 2 + 0.02, 0, -L + 0.02);
-
-    const doorMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(W - 0.06, H - 0.12),
-      new THREE.MeshStandardMaterial({
-        color: 0x8B1A1A,      // Rojo oscuro (como puerta)
-        side: THREE.DoubleSide,
-        roughness: 0.55,
-        metalness: 0.15
-      })
-    );
-    doorMesh.position.set((W - 0.06) / 2, H / 2, 0);
-    doorGroup.add(doorMesh);
-
-    // Marco amarillo alrededor de la puerta (decoración)
-    const doorFrameMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.4, metalness: 0.4 });
-
-    const topFrame = new THREE.Mesh(new THREE.BoxGeometry(W, 0.2, 0.15), doorFrameMat);
-    topFrame.position.set(0, H - 0.1, -L + 0.05);
-    scene.add(topFrame);
-
-    const sideFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
-    sideFrameL.position.set(-W / 2 + 0.1, H / 2, -L + 0.05);
-    scene.add(sideFrameL);
-
-    const sideFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
-    sideFrameR.position.set(W / 2 - 0.1, H / 2, -L + 0.05);
-    scene.add(sideFrameR);
-
-    // Pomo dorado
-    const knobMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.15, metalness: 0.9 });
-    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), knobMat);
-    knob.position.set(W - 0.55, H * 0.5, 0.12);
-    doorGroup.add(knob);
-
-    scene.add(doorGroup);
-
-    // ================= VIDEOS EN LA SEGUNDA SALA =================
-    const videoElements = [];
-
-    VIDEOS.forEach((v) => {
-      // Crear elemento HTML5 video (oculto)
-      const videoEl = document.createElement('video');
-      videoEl.src = v.url;
-      videoEl.loop = true;
-      videoEl.muted = true;
-      videoEl.playsInline = true;
-      videoEl.setAttribute('playsinline', '');
-      videoEl.setAttribute('webkit-playsinline', '');
-      videoEl.preload = 'auto';
-      videoEl.crossOrigin = 'anonymous';
-      videoEl.style.display = 'none';
-      document.body.appendChild(videoEl);
-
-      // Placeholder mientras no se abre la puerta
-      const placeholder = makePlaceholderTexture(v.label);
-      const mat = new THREE.MeshBasicMaterial({ map: placeholder });
-
-      const frame = new THREE.Mesh(frameGeo, matFrame);
-      const screen = new THREE.Mesh(photoGeo, mat);
-
-      if (v.side < 0) {
-        frame.rotation.y = Math.PI / 2;
-        screen.rotation.y = Math.PI / 2;
-        frame.position.set(-W / 2 + 0.01, H * 0.5, -v.z);
-        screen.position.set(-W / 2 + 0.02, H * 0.5, -v.z);
-      } else {
-        frame.rotation.y = -Math.PI / 2;
-        screen.rotation.y = -Math.PI / 2;
-        frame.position.set(W / 2 - 0.01, H * 0.5, -v.z);
-        screen.position.set(W / 2 - 0.02, H * 0.5, -v.z);
-      }
-      scene.add(frame);
-      scene.add(screen);
-
-      videoElements.push({ videoEl, mat });
-    });
-
-    function startVideos() {
-      videoElements.forEach(({ videoEl, mat }) => {
-        videoEl.play().then(() => {
-          const tex = new THREE.VideoTexture(videoEl);
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.anisotropy = maxAniso;
-          tex.minFilter = THREE.LinearFilter;
-          mat.map = tex;
-          mat.needsUpdate = true;
-        }).catch((err) => {
-          console.warn('⚠️ No se pudo reproducir el video:', err);
-        });
-      });
-    }
-
-    // ================= LÓGICA DE LA PUERTA =================
-    let doorOpen = false;
-    let doorProgress = 0;
-    let btnDoorShown = false;
-
-    function openDoor() {
-      if (doorOpen) return;
-      doorOpen = true;
-      document.getElementById('btnOpenDoor').hidden = true;
-      startVideos();
-      if (navigator.vibrate) navigator.vibrate(30);
-    }
-
- 
-  /* ---------- Controles ---------- */
-  #controls {
-    position: fixed; left: 0; right: 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
-    display: flex; justify-content: space-between;
-    padding: 0 14px; z-index: 20; pointer-events: none;
-  }
-  .pad { display: flex; gap: 10px; pointer-events: none; }
   .btn {
     pointer-events: auto;
     width: clamp(56px, 15vw, 74px); height: clamp(56px, 15vw, 74px);
@@ -232,7 +66,6 @@
   }
   .btn.pressed, .btn:active { background: #FFDF00; color: #001C44; transform: scale(0.94); }
 
-  /* ---------- Overlays ---------- */
   .overlay {
     position: fixed; inset: 0;
     display: flex; flex-direction: column;
@@ -275,21 +108,6 @@
   .start-btn:active { transform: scale(0.95); animation: none; }
   .start-btn[hidden] { display: none; }
 
-  /* ---------- Confeti ---------- */
-  .confetti-piece {
-    position: absolute; top: -30px;
-    z-index: 101; pointer-events: none;
-    animation: confetti-fall linear infinite;
-    will-change: transform;
-  }
-  @keyframes confetti-fall {
-    0%   { transform: translateY(-30px) rotate(0deg); }
-    100% { transform: translateY(110vh) rotate(720deg); }
-  }
-
-
-
-  /* ---------- Botón de abrir puerta ---------- */
   .open-door-btn {
     position: fixed;
     left: 50%; bottom: 25%;
@@ -308,7 +126,17 @@
   .open-door-btn:active { transform: translateX(-50%) scale(0.94); animation: none; }
   .open-door-btn[hidden] { display: none; }
 
-   /* ---------- Joystick virtual ---------- */
+  .confetti-piece {
+    position: absolute; top: -30px;
+    z-index: 101; pointer-events: none;
+    animation: confetti-fall linear infinite;
+    will-change: transform;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-30px) rotate(0deg); }
+    100% { transform: translateY(110vh) rotate(720deg); }
+  }
+
   #joystick {
     position: fixed;
     width: 130px; height: 130px;
@@ -332,9 +160,6 @@
     will-change: transform;
   }
 
-
- 
-  /* ---------- Landscape compacto ---------- */
   @media (orientation: landscape) and (max-height: 500px) {
     #hud h1 { font-size: 14px; }
     .btn { width: 48px; height: 48px; font-size: 22px; }
@@ -346,7 +171,8 @@
 <body>
 
   <canvas id="game"></canvas>
-   <div id="joystick" hidden>
+
+  <div id="joystick" hidden>
     <div id="joystick-knob"></div>
   </div>
 
@@ -362,11 +188,10 @@
     </svg>
   </button>
 
-  <div id="hint">Arrastra la pantalla o usa los botones</div>
+  <div id="hint">Izquierda: moverte · Derecha: mirar</div>
+
   <button id="btnOpenDoor" class="open-door-btn" hidden>🔓 &nbsp; Abrir la puerta</button>
 
-
-  <!-- Pantalla de inicio / carga -->
   <div id="startScreen" class="overlay">
     <div class="emoji">🦅</div>
     <h2>Pushale Rios</h2>
@@ -375,14 +200,12 @@
     <button id="btnStart" class="start-btn" hidden>▶ &nbsp; Comenzar</button>
   </div>
 
-  <!-- Pantalla final -->
   <div id="finalScreen" class="overlay hide">
     <div class="emoji">🎂🎉🎈</div>
     <h2>¡FELICIDADES!</h2>
     <p>Felicidades Rios Patishtan<br>Vive sin drogas, depravado</p>
   </div>
 
-  <!-- Audio de fondo -->
   <audio id="bgAudio" loop preload="auto"></audio>
 
   <script type="module">
@@ -391,7 +214,7 @@
     /* =========================================================
        ⬇️ EDITA AQUÍ ⬇️
        ========================================================= */
-    // Fotos: ruta relativa a tu repo (fotos/foto1.jpg) o URL externa
+    // Fotos del primer pasillo
     const PHOTOS = [
       { z: 10, side: -1, label: 'Foto 1', url: 'fotos/foto1.jpg' },
       { z: 18, side:  1, label: 'Foto 2', url: 'fotos/foto2.jpg' },
@@ -400,19 +223,16 @@
       { z: 42, side: -1, label: 'Foto 5', url: 'fotos/foto5.jpg' },
     ];
 
-    // Texto del banner del fondo
-    const BANNER_TEXT = '¡FELICIDADES!';
-
-    // Música de fondo. Sube un mp3 a la carpeta audio/ y pon 'audio/cancion.mp3'.
-    // Si lo dejas vacío (''), el juego corre sin música.
-    const MUSIC_URL = 'audio/cancion.mp3';
-       // Videos para la segunda sala (detrás de la puerta)
+    // Videos de la segunda sala (detrás de la puerta). Coordenadas > 60.
     const VIDEOS = [
       { z: 66, side: -1, label: 'Video 1', url: 'videos/video1.mp4' },
       { z: 72, side:  1, label: 'Video 2', url: 'videos/video2.mp4' },
       { z: 78, side: -1, label: 'Video 3', url: 'videos/video3.mp4' },
     ];
-    const L2 = 20;  // Largo de la segunda sala
+
+    const BANNER_TEXT = '¡FELICIDADES!';
+    const MUSIC_URL   = 'audio/cancion.mp3';   // '' si no quieres música
+    const L2          = 20;                    // Largo de la segunda sala
     /* =========================================================
        ⬆️ FIN DE LA ZONA EDITABLE ⬆️
        ========================================================= */
@@ -427,7 +247,7 @@
       red:     0xD62828,
     };
 
-    // ================= AUDIO (HTML5) =================
+    // ================= AUDIO =================
     const audioEl = document.getElementById('bgAudio');
     const btnMute = document.getElementById('btnMute');
     const hasMusic = MUSIC_URL && MUSIC_URL.trim() !== '';
@@ -474,7 +294,6 @@
     pointLight.position.set(0, 0.2, 0);
     camera.add(pointLight);
 
-    // Luz trasera suave para que las fotos se vean al acercarse
     const backLight = new THREE.PointLight(0xFFF8DC, 0.8, 18, 2);
     backLight.position.set(0, 0.5, -3);
     camera.add(backLight);
@@ -589,6 +408,7 @@
     const matWall    = new THREE.MeshStandardMaterial({ color: COLORS.wall,    roughness: 0.8 });
     const matFrame   = new THREE.MeshStandardMaterial({ color: COLORS.frame,   roughness: 0.4, metalness: 0.3 });
 
+    // ---- Sala 1 ----
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, L), matFloor);
     floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -L / 2); scene.add(floor);
 
@@ -601,13 +421,26 @@
     const wallR = new THREE.Mesh(new THREE.PlaneGeometry(L, H), matWall);
     wallR.rotation.y = -Math.PI / 2; wallR.position.set(W / 2, H / 2, -L / 2); scene.add(wallR);
 
+    // ---- Sala 2 ----
+    const floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, L2), matFloor);
+    floor2.rotation.x = -Math.PI / 2; floor2.position.set(0, 0, -L - L2 / 2); scene.add(floor2);
+
+    const ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(W, L2), matCeiling);
+    ceiling2.rotation.x = Math.PI / 2; ceiling2.position.set(0, H, -L - L2 / 2); scene.add(ceiling2);
+
+    const wallL2 = new THREE.Mesh(new THREE.PlaneGeometry(L2, H), matWall);
+    wallL2.rotation.y = Math.PI / 2; wallL2.position.set(-W / 2, H / 2, -L - L2 / 2); scene.add(wallL2);
+
+    const wallR2 = new THREE.Mesh(new THREE.PlaneGeometry(L2, H), matWall);
+    wallR2.rotation.y = -Math.PI / 2; wallR2.position.set(W / 2, H / 2, -L - L2 / 2); scene.add(wallR2);
+
     const endWall = new THREE.Mesh(
       new THREE.PlaneGeometry(W, H),
       new THREE.MeshStandardMaterial({ color: COLORS.ceiling })
     );
     endWall.position.set(0, H / 2, -L - L2); scene.add(endWall);
 
-    // ================= ALFOMBRA AMÉRICA =================
+    // Alfombra sala 1
     const carpetTex = makeShieldTexture(512, '#001C44');
     carpetTex.wrapS = carpetTex.wrapT = THREE.RepeatWrapping;
     carpetTex.repeat.set(1, 14);
@@ -629,7 +462,29 @@
       edge.rotation.x = -Math.PI / 2; edge.position.set(x, 0.02, -L / 2); scene.add(edge);
     });
 
-    // ================= ZÓCALOS Y BANDAS =================
+    // Alfombra sala 2
+    const carpetTex2 = makeShieldTexture(512, '#001C44');
+    carpetTex2.wrapS = carpetTex2.wrapT = THREE.RepeatWrapping;
+    carpetTex2.repeat.set(1, 5);
+    carpetTex2.anisotropy = maxAniso;
+
+    const carpet2 = new THREE.Mesh(
+      new THREE.PlaneGeometry(W * 0.55, L2),
+      new THREE.MeshStandardMaterial({ map: carpetTex2, roughness: 0.9 })
+    );
+    carpet2.rotation.x = -Math.PI / 2;
+    carpet2.position.set(0, 0.015, -L - L2 / 2);
+    scene.add(carpet2);
+
+    [W * 0.275, -W * 0.275].forEach(x => {
+      const edge = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.05, L2),
+        new THREE.MeshStandardMaterial({ color: COLORS.frame })
+      );
+      edge.rotation.x = -Math.PI / 2; edge.position.set(x, 0.02, -L - L2 / 2); scene.add(edge);
+    });
+
+    // ---- Zócalos y bandas sala 1 ----
     [-W / 2 + 0.005, W / 2 - 0.005].forEach((x, i) => {
       const trim = new THREE.Mesh(
         new THREE.PlaneGeometry(L, 0.35),
@@ -657,14 +512,43 @@
       bandRed.position.set(x, 0.45, -L / 2); scene.add(bandRed);
     });
 
-    const fondoTrim = new THREE.Mesh(
+    // ---- Zócalos y bandas sala 2 ----
+    [-W / 2 + 0.005, W / 2 - 0.005].forEach((x, i) => {
+      const trim = new THREE.Mesh(
+        new THREE.PlaneGeometry(L2, 0.35),
+        new THREE.MeshStandardMaterial({ color: COLORS.frame })
+      );
+      trim.rotation.y = (i === 0 ? 1 : -1) * Math.PI / 2;
+      trim.position.set(x, 0.175, -L - L2 / 2); scene.add(trim);
+    });
+
+    [-W / 2 + 0.005, W / 2 - 0.005].forEach((x, i) => {
+      const band = new THREE.Mesh(
+        new THREE.PlaneGeometry(L2, 0.25),
+        new THREE.MeshStandardMaterial({ color: COLORS.frame })
+      );
+      band.rotation.y = (i === 0 ? 1 : -1) * Math.PI / 2;
+      band.position.set(x, H - 0.5, -L - L2 / 2); scene.add(band);
+    });
+
+    [-W / 2 + 0.005, W / 2 - 0.005].forEach((x, i) => {
+      const bandRed = new THREE.Mesh(
+        new THREE.PlaneGeometry(L2, 0.08),
+        new THREE.MeshStandardMaterial({ color: COLORS.red })
+      );
+      bandRed.rotation.y = (i === 0 ? 1 : -1) * Math.PI / 2;
+      bandRed.position.set(x, 0.45, -L - L2 / 2); scene.add(bandRed);
+    });
+
+    // Zócalo fondo sala 2
+    const fondoTrim2 = new THREE.Mesh(
       new THREE.PlaneGeometry(W, 0.35),
       new THREE.MeshStandardMaterial({ color: COLORS.frame })
     );
-    fondoTrim.position.set(0, 0.175, -L + 0.01); scene.add(fondoTrim);
+    fondoTrim2.position.set(0, 0.175, -L - L2 + 0.01); scene.add(fondoTrim2);
 
-    // ================= VIGAS =================
-    for (let z = -4; z > -L + 2; z -= 6) {
+    // ================= VIGAS (ambas salas) =================
+    for (let z = -4; z > -L - L2 + 2; z -= 6) {
       const beam = new THREE.Mesh(
         new THREE.BoxGeometry(W + 0.2, 0.35, 0.4),
         new THREE.MeshStandardMaterial({ color: COLORS.frame })
@@ -672,8 +556,8 @@
       beam.position.set(0, H - 0.175, z); scene.add(beam);
     }
 
-    // ================= LÁMPARAS EN EL TECHO =================
-    for (let z = -7; z > -L + 4; z -= 12) {
+    // ================= LÁMPARAS (ambas salas) =================
+    for (let z = -7; z > -L - L2 + 4; z -= 12) {
       const lamp = new THREE.Mesh(
         new THREE.PlaneGeometry(1.4, 0.5),
         new THREE.MeshBasicMaterial({ color: 0xFFF8DC })
@@ -683,7 +567,7 @@
       scene.add(lamp);
     }
 
-    // ================= BANDERINES ANIMADOS =================
+    // ================= BANDERINES (ambas salas) =================
     const flagColors = [0xFFDF00, 0x001C44, 0xD62828];
     const flagShape = new THREE.Shape();
     flagShape.moveTo(-0.35, 0);
@@ -695,7 +579,7 @@
     const swingingFlags = [];
 
     let flagIdx = 0;
-    for (let z = -3; z > -L + 2; z -= 3.5) {
+    for (let z = -3; z > -L - L2 + 2; z -= 3.5) {
       const fL = new THREE.Mesh(flagGeo, flagMats[flagIdx % 3]);
       fL.position.set(-W * 0.32, H - 0.15, z);
       scene.add(fL);
@@ -709,9 +593,8 @@
       flagIdx++;
     }
 
-    // Hilos de los que cuelgan
     const stringMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    for (let z = -3; z > -L + 2; z -= 3.5) {
+    for (let z = -3; z > -L - L2 + 2; z -= 3.5) {
       [-W * 0.32, W * 0.32].forEach(x => {
         const str = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 0.5), stringMat);
         str.position.set(x, H - 0.4, z);
@@ -741,7 +624,7 @@
       return tex;
     }
 
-    // Banner final
+    // Banner final (al fondo de la sala 2)
     const banner = new THREE.Mesh(
       new THREE.PlaneGeometry(W * 0.8, H * 0.28),
       new THREE.MeshBasicMaterial({
@@ -751,7 +634,7 @@
     banner.position.set(0, H * 0.42, -L - L2 + 0.05);
     scene.add(banner);
 
-    // Escudo gigante
+    // Escudo gigante (al fondo de la sala 2)
     const bigShield = new THREE.Mesh(
       new THREE.PlaneGeometry(3.2, 3.2),
       new THREE.MeshBasicMaterial({ map: makeShieldTexture(768, null), transparent: true })
@@ -759,7 +642,7 @@
     bigShield.position.set(0, H * 0.75, -L - L2 + 0.05);
     scene.add(bigShield);
 
-    // ================= CUADROS =================
+    // ================= CUADROS (FOTOS) =================
     function makePlaceholderTexture(label) {
       const w = 512, h = 640;
       const c = document.createElement('canvas');
@@ -806,6 +689,121 @@
       photoMeshes.push({ photoMat, url: p.url });
     });
 
+    // ================= CUADROS (VIDEOS) =================
+    const videoElements = [];
+
+    VIDEOS.forEach((v) => {
+      const videoEl = document.createElement('video');
+      videoEl.src = v.url;
+      videoEl.loop = true;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.preload = 'auto';
+      videoEl.crossOrigin = 'anonymous';
+      videoEl.style.display = 'none';
+      document.body.appendChild(videoEl);
+
+      const placeholder = makePlaceholderTexture(v.label);
+      const mat = new THREE.MeshBasicMaterial({ map: placeholder });
+
+      const frame = new THREE.Mesh(frameGeo, matFrame);
+      const screen = new THREE.Mesh(photoGeo, mat);
+
+      if (v.side < 0) {
+        frame.rotation.y = Math.PI / 2;
+        screen.rotation.y = Math.PI / 2;
+        frame.position.set(-W / 2 + 0.01, H * 0.5, -v.z);
+        screen.position.set(-W / 2 + 0.02, H * 0.5, -v.z);
+      } else {
+        frame.rotation.y = -Math.PI / 2;
+        screen.rotation.y = -Math.PI / 2;
+        frame.position.set(W / 2 - 0.01, H * 0.5, -v.z);
+        screen.position.set(W / 2 - 0.02, H * 0.5, -v.z);
+      }
+      scene.add(frame);
+      scene.add(screen);
+
+      videoElements.push({ videoEl, mat });
+    });
+
+    function startVideos() {
+      videoElements.forEach(({ videoEl, mat }) => {
+        const playPromise = videoEl.play();
+        if (playPromise && playPromise.then) {
+          playPromise.then(() => {
+            const tex = new THREE.VideoTexture(videoEl);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.anisotropy = maxAniso;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            mat.map = tex;
+            mat.needsUpdate = true;
+          }).catch((err) => {
+            console.warn('⚠️ No se pudo reproducir el video:', err);
+          });
+        }
+      });
+    }
+
+    // ================= PUERTA =================
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(-W / 2 + 0.02, 0, -L + 0.02);
+    scene.add(doorGroup);
+
+    const doorMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(W - 0.06, H - 0.12),
+      new THREE.MeshStandardMaterial({
+        color: 0x8B1A1A,
+        side: THREE.DoubleSide,
+        roughness: 0.55,
+        metalness: 0.15,
+      })
+    );
+    doorMesh.position.set((W - 0.06) / 2, H / 2, 0);
+    doorGroup.add(doorMesh);
+
+    // Pomo dorado
+    const knobMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.15, metalness: 0.9 });
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), knobMat);
+    knob.position.set(W - 0.55, H * 0.5, 0.12);
+    doorGroup.add(knob);
+
+    // Marco de la puerta
+    const doorFrameMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.4, metalness: 0.4 });
+
+    const topFrame = new THREE.Mesh(new THREE.BoxGeometry(W, 0.2, 0.15), doorFrameMat);
+    topFrame.position.set(0, H - 0.1, -L + 0.02);
+    scene.add(topFrame);
+
+    const sideFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
+    sideFrameL.position.set(-W / 2 + 0.1, H / 2, -L + 0.02);
+    scene.add(sideFrameL);
+
+    const sideFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
+    sideFrameR.position.set(W / 2 - 0.1, H / 2, -L + 0.02);
+    scene.add(sideFrameR);
+
+    // ================= LÓGICA DE LA PUERTA =================
+    let doorOpen = false;
+    let doorProgress = 0;
+    let btnDoorShown = false;
+
+    function openDoor() {
+      if (doorOpen) return;
+      doorOpen = true;
+      document.getElementById('btnOpenDoor').hidden = true;
+      startVideos();
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+    document.getElementById('btnOpenDoor').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openDoor();
+    });
+
     // ================= CONTROLES =================
     const keys = { forward: false, back: false, left: false, right: false };
     let hasInteracted = false;
@@ -815,8 +813,6 @@
       hasInteracted = true;
       setTimeout(() => document.getElementById('hint').classList.add('fade'), 400);
     }
-
-
 
     const keyMap = {
       ArrowUp: 'forward', w: 'forward', W: 'forward',
@@ -831,32 +827,28 @@
       if (keyMap[e.key]) keys[keyMap[e.key]] = false;
     });
 
-
-
     // ================= CONTROLES TÁCTILES DUALES =================
     const joystick = document.getElementById('joystick');
     const joystickKnob = document.getElementById('joystick-knob');
 
-    const JOY_RANGE = 55;              // Radio del joystick (px)
-    const JOY_DEAD  = 8;               // Zona muerta (px)
-    const LOOK_SENS = 0.005;           // Sensibilidad de cámara (rad/px)
-    const PITCH_MAX = Math.PI / 2 - 0.15; // Límite de inclinación
+    const JOY_RANGE = 55;
+    const JOY_DEAD  = 8;
+    const LOOK_SENS = 0.005;
+    const PITCH_MAX = Math.PI / 2 - 0.15;
 
     let joyTouchId = null;
     let joyStartX = 0, joyStartY = 0;
-    let touchMoveX = 0;   // Strafe (-1 izq, +1 der)
-    let touchMoveY = 0;   // Forward (-1 atrás, +1 adelante)
+    let touchMoveX = 0;
+    let touchMoveY = 0;
 
     let lookTouchId = null;
     let lookLastX = 0, lookLastY = 0;
-    let pitch = 0;        // Ángulo vertical de la cámara
+    let pitch = 0;
 
     canvas.addEventListener('touchstart', (e) => {
       for (const t of e.changedTouches) {
         const isLeft = t.clientX < window.innerWidth / 2;
-
         if (isLeft && joyTouchId === null) {
-          // -------- MITAD IZQUIERDA: joystick de movimiento --------
           joyTouchId = t.identifier;
           joyStartX = t.clientX;
           joyStartY = t.clientY;
@@ -867,7 +859,6 @@
           markInteracted();
           if (navigator.vibrate) navigator.vibrate(8);
         } else if (!isLeft && lookTouchId === null) {
-          // -------- MITAD DERECHA: cámara --------
           lookTouchId = t.identifier;
           lookLastX = t.clientX;
           lookLastY = t.clientY;
@@ -895,13 +886,11 @@
           touchMoveY = -Math.max(-1, Math.min(1, dy / JOY_RANGE));
           if (Math.abs(dx) < JOY_DEAD) touchMoveX = 0;
           if (Math.abs(dy) < JOY_DEAD) touchMoveY = 0;
-
         } else if (t.identifier === lookTouchId) {
           const dx = t.clientX - lookLastX;
           const dy = t.clientY - lookLastY;
           lookLastX = t.clientX;
           lookLastY = t.clientY;
-
           camera.rotation.y -= dx * LOOK_SENS;
           pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, pitch - dy * LOOK_SENS));
           camera.rotation.x = pitch;
@@ -927,7 +916,7 @@
     canvas.addEventListener('touchend',    endTouch, { passive: false });
     canvas.addEventListener('touchcancel', endTouch, { passive: false });
 
-       // ================= MOUSE LOOK (PC) =================
+    // ================= MOUSE LOOK (PC) =================
     let mouseDown = false;
     let mouseLastX = 0, mouseLastY = 0;
 
@@ -946,7 +935,6 @@
       const dy = e.clientY - mouseLastY;
       mouseLastX = e.clientX;
       mouseLastY = e.clientY;
-
       camera.rotation.y -= dx * LOOK_SENS;
       pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, pitch - dy * LOOK_SENS));
       camera.rotation.x = pitch;
@@ -955,12 +943,12 @@
     window.addEventListener('mouseup', () => {
       if (mouseDown) {
         mouseDown = false;
-        canvas.style.cursor = '';
+        canvas.style.cursor = 'grab';
       }
     });
 
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-   
+
     // ================= FULLSCREEN =================
     const btnFull = document.getElementById('btnFull');
     function isFs() {
@@ -1004,7 +992,7 @@
         resize();
       }));
 
-    // ================= CONFETI FINAL =================
+    // ================= CONFETI =================
     function launchConfetti() {
       const fs = document.getElementById('finalScreen');
       const colors = ['#FFDF00', '#001C44', '#D62828', '#FFFFFF', '#FFDF00'];
@@ -1042,16 +1030,17 @@
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
 
-         // Teclado (por si juegas en PC)
+      const cw = container.clientWidth, ch = container.clientHeight;
+      if (cw !== lastW || ch !== lastH) resize();
+
+      // --- Movimiento ---
       const kFwd    = (keys.forward ? 1 : 0) - (keys.back  ? 1 : 0);
       const kStrafe = (keys.right   ? 1 : 0) - (keys.left  ? 1 : 0);
       const kTurn   = (keys.left    ? 1 : 0) - (keys.right ? 1 : 0);
 
-      // Suma teclado + joystick
       let fwd    = Math.max(-1, Math.min(1, kFwd    + touchMoveY));
       let strafe = Math.max(-1, Math.min(1, kStrafe + touchMoveX));
 
-      // Giro solo con teclado (el táctil ya lo hace por el lado derecho)
       camera.rotation.y += kTurn * TURN_SPEED * dt;
 
       let moving = false;
@@ -1075,28 +1064,29 @@
       const bobAmount = moving ? 0.055 : 0.012;
       camera.position.y = 1.6 + Math.sin(bobPhase) * bobAmount;
 
-           // --- Puerta ---
+      // --- Puerta animándose ---
       if (doorOpen && doorProgress < 1) {
         doorProgress = Math.min(1, doorProgress + dt / 1.2);
         const ease = 1 - Math.pow(1 - doorProgress, 3);
         doorGroup.rotation.y = (Math.PI / 2) * ease;
       }
 
-      // --- Mostrar/ocultar botón de abrir puerta ---
+      // --- Botón abrir puerta ---
       const shouldShowDoor = !doorOpen && camera.position.z < -L + 6;
       if (shouldShowDoor !== btnDoorShown) {
         btnDoorShown = shouldShowDoor;
         document.getElementById('btnOpenDoor').hidden = !shouldShowDoor;
       }
 
-      // Banderines meciéndose
+      // --- Banderines ---
       swingingFlags.forEach(f => {
         f.mesh.rotation.z = Math.sin(elapsed * 1.5 + f.phase) * 0.14;
       });
 
-      // Pulso sutil de la luz de la linterna
+      // --- Luz pulso ---
       pointLight.intensity = 1.4 + Math.sin(elapsed * 2) * 0.08;
 
+      // --- Trigger final ---
       if (camera.position.z < -L - L2 + 3.5) showFinalScreen();
 
       renderer.render(scene, camera);
@@ -1115,7 +1105,7 @@
       }));
     }
 
-    // ================= START SCREEN + INIT =================
+    // ================= INIT =================
     const startScreen = document.getElementById('startScreen');
     const startMsg    = document.getElementById('startMsg');
     const startSpinner= document.getElementById('startSpinner');
@@ -1125,13 +1115,11 @@
       resize();
       animate();
 
-      // Espera fotos con timeout de seguridad
       await Promise.race([
         preloadPhotos(),
         new Promise(res => setTimeout(res, 8000))
       ]);
 
-      // Cambiar el estado del overlay
       startSpinner.style.display = 'none';
       startMsg.textContent = hasMusic
         ? 'Toca para comenzar (subele el volumen)'
@@ -1140,7 +1128,6 @@
     }
 
     btnStart.addEventListener('click', async () => {
-      // Reproducir música — este gesto del usuario desbloquea el audio en móvil
       if (hasMusic) {
         try {
           await audioEl.play();
@@ -1150,18 +1137,9 @@
         }
       }
 
-      // Ocultar overlay
       startScreen.classList.add('hide');
       setTimeout(() => startScreen.remove(), 800);
-
-      // El hint se auto-oculta a los 6s
       setTimeout(() => document.getElementById('hint').classList.add('fade'), 6000);
-    });
-
-       document.getElementById('btnOpenDoor').addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openDoor();
     });
 
     init();
