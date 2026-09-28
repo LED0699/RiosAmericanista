@@ -55,6 +55,162 @@
   }
   #hint.fade { opacity: 0; }
 
+
+
+    // ================= SEGUNDA SALA (DETRÁS DE LA PUERTA) =================
+    const floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, L2), matFloor);
+    floor2.rotation.x = -Math.PI / 2;
+    floor2.position.set(0, 0, -L - L2 / 2);
+    scene.add(floor2);
+
+    const ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(W, L2), matCeiling);
+    ceiling2.rotation.x = Math.PI / 2;
+    ceiling2.position.set(0, H, -L - L2 / 2);
+    scene.add(ceiling2);
+
+    const wallL2 = new THREE.Mesh(new THREE.PlaneGeometry(L2, H), matWall);
+    wallL2.rotation.y = Math.PI / 2;
+    wallL2.position.set(-W / 2, H / 2, -L - L2 / 2);
+    scene.add(wallL2);
+
+    const wallR2 = new THREE.Mesh(new THREE.PlaneGeometry(L2, H), matWall);
+    wallR2.rotation.y = -Math.PI / 2;
+    wallR2.position.set(W / 2, H / 2, -L - L2 / 2);
+    scene.add(wallR2);
+
+    // Alfombra continuación (misma textura)
+    const carpetTex2 = makeShieldTexture(512, '#001C44');
+    carpetTex2.wrapS = carpetTex2.wrapT = THREE.RepeatWrapping;
+    carpetTex2.repeat.set(1, 5);
+    carpetTex2.anisotropy = maxAniso;
+    const carpet2 = new THREE.Mesh(
+      new THREE.PlaneGeometry(W * 0.55, L2),
+      new THREE.MeshStandardMaterial({ map: carpetTex2, roughness: 0.9 })
+    );
+    carpet2.rotation.x = -Math.PI / 2;
+    carpet2.position.set(0, 0.015, -L - L2 / 2);
+    scene.add(carpet2);
+
+    // Zócalos de la segunda sala
+    [-W / 2 + 0.005, W / 2 - 0.005].forEach((x, i) => {
+      const trim = new THREE.Mesh(
+        new THREE.PlaneGeometry(L2, 0.35),
+        new THREE.MeshStandardMaterial({ color: COLORS.frame })
+      );
+      trim.rotation.y = (i === 0 ? 1 : -1) * Math.PI / 2;
+      trim.position.set(x, 0.175, -L - L2 / 2);
+      scene.add(trim);
+    });
+
+    // ================= PUERTA AL FINAL DEL 1er PASILLO =================
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(-W / 2 + 0.02, 0, -L + 0.02);
+
+    const doorMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(W - 0.06, H - 0.12),
+      new THREE.MeshStandardMaterial({
+        color: 0x8B1A1A,      // Rojo oscuro (como puerta)
+        side: THREE.DoubleSide,
+        roughness: 0.55,
+        metalness: 0.15
+      })
+    );
+    doorMesh.position.set((W - 0.06) / 2, H / 2, 0);
+    doorGroup.add(doorMesh);
+
+    // Marco amarillo alrededor de la puerta (decoración)
+    const doorFrameMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.4, metalness: 0.4 });
+
+    const topFrame = new THREE.Mesh(new THREE.BoxGeometry(W, 0.2, 0.15), doorFrameMat);
+    topFrame.position.set(0, H - 0.1, -L + 0.05);
+    scene.add(topFrame);
+
+    const sideFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
+    sideFrameL.position.set(-W / 2 + 0.1, H / 2, -L + 0.05);
+    scene.add(sideFrameL);
+
+    const sideFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.2, H, 0.15), doorFrameMat);
+    sideFrameR.position.set(W / 2 - 0.1, H / 2, -L + 0.05);
+    scene.add(sideFrameR);
+
+    // Pomo dorado
+    const knobMat = new THREE.MeshStandardMaterial({ color: COLORS.frame, roughness: 0.15, metalness: 0.9 });
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), knobMat);
+    knob.position.set(W - 0.55, H * 0.5, 0.12);
+    doorGroup.add(knob);
+
+    scene.add(doorGroup);
+
+    // ================= VIDEOS EN LA SEGUNDA SALA =================
+    const videoElements = [];
+
+    VIDEOS.forEach((v) => {
+      // Crear elemento HTML5 video (oculto)
+      const videoEl = document.createElement('video');
+      videoEl.src = v.url;
+      videoEl.loop = true;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.preload = 'auto';
+      videoEl.crossOrigin = 'anonymous';
+      videoEl.style.display = 'none';
+      document.body.appendChild(videoEl);
+
+      // Placeholder mientras no se abre la puerta
+      const placeholder = makePlaceholderTexture(v.label);
+      const mat = new THREE.MeshBasicMaterial({ map: placeholder });
+
+      const frame = new THREE.Mesh(frameGeo, matFrame);
+      const screen = new THREE.Mesh(photoGeo, mat);
+
+      if (v.side < 0) {
+        frame.rotation.y = Math.PI / 2;
+        screen.rotation.y = Math.PI / 2;
+        frame.position.set(-W / 2 + 0.01, H * 0.5, -v.z);
+        screen.position.set(-W / 2 + 0.02, H * 0.5, -v.z);
+      } else {
+        frame.rotation.y = -Math.PI / 2;
+        screen.rotation.y = -Math.PI / 2;
+        frame.position.set(W / 2 - 0.01, H * 0.5, -v.z);
+        screen.position.set(W / 2 - 0.02, H * 0.5, -v.z);
+      }
+      scene.add(frame);
+      scene.add(screen);
+
+      videoElements.push({ videoEl, mat });
+    });
+
+    function startVideos() {
+      videoElements.forEach(({ videoEl, mat }) => {
+        videoEl.play().then(() => {
+          const tex = new THREE.VideoTexture(videoEl);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.anisotropy = maxAniso;
+          tex.minFilter = THREE.LinearFilter;
+          mat.map = tex;
+          mat.needsUpdate = true;
+        }).catch((err) => {
+          console.warn('⚠️ No se pudo reproducir el video:', err);
+        });
+      });
+    }
+
+    // ================= LÓGICA DE LA PUERTA =================
+    let doorOpen = false;
+    let doorProgress = 0;
+    let btnDoorShown = false;
+
+    function openDoor() {
+      if (doorOpen) return;
+      doorOpen = true;
+      document.getElementById('btnOpenDoor').hidden = true;
+      startVideos();
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+ 
   /* ---------- Controles ---------- */
   #controls {
     position: fixed; left: 0; right: 0;
@@ -132,6 +288,26 @@
   }
 
 
+
+  /* ---------- Botón de abrir puerta ---------- */
+  .open-door-btn {
+    position: fixed;
+    left: 50%; bottom: 25%;
+    transform: translateX(-50%);
+    padding: 16px 36px;
+    background: #FFDF00; color: #001C44;
+    border: 3px solid #001C44; border-radius: 50px;
+    font-size: clamp(15px, 4.5vw, 20px); font-weight: 900;
+    cursor: pointer; font-family: inherit;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 24px rgba(255,223,0,0.6), 0 0 0 4px rgba(0,28,68,0.5);
+    animation: pulse 1.4s ease-in-out infinite;
+    z-index: 30;
+    touch-action: manipulation;
+  }
+  .open-door-btn:active { transform: translateX(-50%) scale(0.94); animation: none; }
+  .open-door-btn[hidden] { display: none; }
+
    /* ---------- Joystick virtual ---------- */
   #joystick {
     position: fixed;
@@ -187,6 +363,7 @@
   </button>
 
   <div id="hint">Arrastra la pantalla o usa los botones</div>
+  <button id="btnOpenDoor" class="open-door-btn" hidden>🔓 &nbsp; Abrir la puerta</button>
 
 
   <!-- Pantalla de inicio / carga -->
@@ -229,6 +406,13 @@
     // Música de fondo. Sube un mp3 a la carpeta audio/ y pon 'audio/cancion.mp3'.
     // Si lo dejas vacío (''), el juego corre sin música.
     const MUSIC_URL = 'audio/cancion.mp3';
+       // Videos para la segunda sala (detrás de la puerta)
+    const VIDEOS = [
+      { z: 66, side: -1, label: 'Video 1', url: 'videos/video1.mp4' },
+      { z: 72, side:  1, label: 'Video 2', url: 'videos/video2.mp4' },
+      { z: 78, side: -1, label: 'Video 3', url: 'videos/video3.mp4' },
+    ];
+    const L2 = 20;  // Largo de la segunda sala
     /* =========================================================
        ⬆️ FIN DE LA ZONA EDITABLE ⬆️
        ========================================================= */
@@ -421,7 +605,7 @@
       new THREE.PlaneGeometry(W, H),
       new THREE.MeshStandardMaterial({ color: COLORS.ceiling })
     );
-    endWall.position.set(0, H / 2, -L); scene.add(endWall);
+    endWall.position.set(0, H / 2, -L - L2); scene.add(endWall);
 
     // ================= ALFOMBRA AMÉRICA =================
     const carpetTex = makeShieldTexture(512, '#001C44');
@@ -564,7 +748,7 @@
         map: makeTextTexture(BANNER_TEXT, { w: 1024, h: 384, size: 160 })
       })
     );
-    banner.position.set(0, H * 0.42, -L + 0.05);
+    banner.position.set(0, H * 0.42, -L - L2 + 0.05);
     scene.add(banner);
 
     // Escudo gigante
@@ -572,7 +756,7 @@
       new THREE.PlaneGeometry(3.2, 3.2),
       new THREE.MeshBasicMaterial({ map: makeShieldTexture(768, null), transparent: true })
     );
-    bigShield.position.set(0, H * 0.75, -L + 0.05);
+    bigShield.position.set(0, H * 0.75, -L - L2 + 0.05);
     scene.add(bigShield);
 
     // ================= CUADROS =================
@@ -884,11 +1068,26 @@
 
       const r = 0.5;
       camera.position.x = Math.max(-W / 2 + r, Math.min(W / 2 - r, camera.position.x));
-      camera.position.z = Math.max(-L + r + 0.6, Math.min(0.5, camera.position.z));
+      const minZ = doorOpen ? (-L - L2 + r + 0.6) : (-L + r + 0.6);
+      camera.position.z = Math.max(minZ, Math.min(0.5, camera.position.z));
 
       bobPhase += dt * (moving ? 9 : 2);
       const bobAmount = moving ? 0.055 : 0.012;
       camera.position.y = 1.6 + Math.sin(bobPhase) * bobAmount;
+
+           // --- Puerta ---
+      if (doorOpen && doorProgress < 1) {
+        doorProgress = Math.min(1, doorProgress + dt / 1.2);
+        const ease = 1 - Math.pow(1 - doorProgress, 3);
+        doorGroup.rotation.y = (Math.PI / 2) * ease;
+      }
+
+      // --- Mostrar/ocultar botón de abrir puerta ---
+      const shouldShowDoor = !doorOpen && camera.position.z < -L + 6;
+      if (shouldShowDoor !== btnDoorShown) {
+        btnDoorShown = shouldShowDoor;
+        document.getElementById('btnOpenDoor').hidden = !shouldShowDoor;
+      }
 
       // Banderines meciéndose
       swingingFlags.forEach(f => {
@@ -898,7 +1097,7 @@
       // Pulso sutil de la luz de la linterna
       pointLight.intensity = 1.4 + Math.sin(elapsed * 2) * 0.08;
 
-      if (camera.position.z < -L + 3.5) showFinalScreen();
+      if (camera.position.z < -L - L2 + 3.5) showFinalScreen();
 
       renderer.render(scene, camera);
     }
@@ -957,6 +1156,12 @@
 
       // El hint se auto-oculta a los 6s
       setTimeout(() => document.getElementById('hint').classList.add('fade'), 6000);
+    });
+
+       document.getElementById('btnOpenDoor').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openDoor();
     });
 
     init();
